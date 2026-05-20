@@ -1,4 +1,7 @@
-﻿namespace API.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace API.Models;
 
 public partial class User
 {
@@ -19,4 +22,6 @@ public partial class User
     public DateTime? LastDonationDate { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public string? Role { get; set; }
 }

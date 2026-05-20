@@ -16,4 +16,5 @@ public class RegisterDto
     public required string BloodGroup { get; set; }
     public string? Disease { get; set; } 
     public DateTime? LastDonationDate { get; set; }
+    public string? Role { get; set; } 
 }

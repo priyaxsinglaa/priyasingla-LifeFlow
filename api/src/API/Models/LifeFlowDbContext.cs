@@ -39,6 +39,9 @@ public partial class LifeFlowDbContext : DbContext
             entity.Property(e => e.LastDonationDate).HasColumnType("datetime");
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.PhoneNumber).HasMaxLength(15);
+            entity.Property(e => e.Role)
+                .HasMaxLength(20)
+                .HasDefaultValue("Client", "DF_Users_Role_Client");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,21 +1,22 @@
+using API.Interfaces;
+
 namespace API.Services;
 using API.DTOs;
 using API.Models;
 using API.Repositories;
-public class AuthService
+using System.Text.Json;
+public class AuthService(IUserRepository repo, IConfiguration config, IJwtService jwtService)
+    : IAuthService
 {
-    private readonly UserRepository _repo;
-
-    public AuthService(UserRepository repo)
-    {
-        _repo = repo;
-    }
+    private readonly IUserRepository _repo = repo;
+    private readonly IConfiguration _config = config;
+    private readonly IJwtService _jwtService = jwtService;
 
     public async Task<string> Register(RegisterDto dto)
     {
         var existingUser = await _repo.GetByEmail(dto.Email);
-        var existingPhoneNumbser = await _repo.GetByPhoneNumber(dto.PhoneNumber);
-        if(existingPhoneNumbser != null || existingUser != null)
+        var existingPhoneNumber = await _repo.GetByPhoneNumber(dto.PhoneNumber);
+        if(existingPhoneNumber != null || existingUser != null)
         {
             return "Account is registered already";
         }
@@ -31,7 +32,8 @@ public class AuthService
             BloodGroup = dto.BloodGroup,
             Disease = dto.Disease,
             LastDonationDate = dto.LastDonationDate,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            Role = dto.Role ?? "Client"
         };
 
         await _repo.AddUser(user);
@@ -42,10 +44,9 @@ public class AuthService
     public async Task<string> Login(LoginDto dto)
     {   
         if (string.IsNullOrEmpty(dto.Email) && string.IsNullOrEmpty(dto.PhoneNumber))
-        return "Enter your existing Email or Contact Number";
+            return "Enter your existing Email or Contact Number";
 
         var user = await _repo.GetByEmailOrPhoneNumber(dto.Email, dto.PhoneNumber); 
-        //var user = await _repo.GetByEmail(dto.Email);
 
         if (user == null)
             return "Account does not exist";
@@ -54,7 +55,13 @@ public class AuthService
 
         if (!isValid)
             return "Password is incorrect";
-
-        return "Logged in successfully";
+        var token = _jwtService.GenerateToken(user);
+        return JsonSerializer.Serialize(new
+        {
+            Token = token,
+            user.FullName,
+            user.Email,
+            user.Role
+        });
     }
 }

@@ -33,6 +33,6 @@ namespace API.Controllers
             return Unauthorized(result);
 
         return Ok(result);
-    }
+    }   
 }
 }

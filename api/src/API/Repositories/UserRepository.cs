@@ -1,15 +1,10 @@
+using API.Interfaces;
 using API.Models;
 using Microsoft.EntityFrameworkCore;
 namespace API.Repositories;
-public class UserRepository
+public class UserRepository(LifeFlowDbContext context) : IUserRepository
 {
-    private readonly LifeFlowDbContext _context;
-
-    public UserRepository(LifeFlowDbContext context)
-    {
-        _context = context;
-    }
-
+    private readonly LifeFlowDbContext _context = context;
     
     public async Task<User?> GetByEmail(string email)
     {
@@ -29,6 +24,7 @@ public class UserRepository
     public async Task<User?> GetByEmailOrPhoneNumber(string? email ,string? phoneNumber)
     {
         return await _context.Users
-            .FirstOrDefaultAsync(u=>(u.Email != null && u.Email == email) || (u.PhoneNumber != null && u.PhoneNumber == phoneNumber));
+            .FirstOrDefaultAsync(u => (!string.IsNullOrEmpty(email) && u.Email == email) || 
+                                      (!string.IsNullOrEmpty(phoneNumber) && u.PhoneNumber == phoneNumber));
     }
 }

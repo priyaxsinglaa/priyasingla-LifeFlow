@@ -16,6 +16,8 @@ builder.Services.AddDbContext<API.Models.LifeFlowDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IUserInterface, UserService>();
+builder.Services.AddScoped<IDonationService, DonationService>();
 var secretKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrEmpty(secretKey))
 {
@@ -32,6 +34,8 @@ builder.Services.AddAuthentication(options =>
     {
         options.RequireHttpsMetadata = false; 
         options.SaveToken = true;
+        options.TokenHandlers.Clear();
+        options.TokenHandlers.Add(new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler());
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -51,9 +55,6 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
 var app = builder.Build();
 
 

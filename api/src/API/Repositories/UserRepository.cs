@@ -23,8 +23,26 @@ public class UserRepository(LifeFlowDbContext context) : IUserRepository
     }
     public async Task<User?> GetByEmailOrPhoneNumber(string? email ,string? phoneNumber)
     {
+        email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+        phoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        if (email == null && phoneNumber == null)
+        {
+            return null;
+        }
         return await _context.Users
             .FirstOrDefaultAsync(u => (!string.IsNullOrEmpty(email) && u.Email == email) || 
                                       (!string.IsNullOrEmpty(phoneNumber) && u.PhoneNumber == phoneNumber));
+    }
+
+    public async Task AddHealthProfile(HealthProfile health)
+    {
+            await _context.HealthProfiles.AddAsync(health);
+            await _context.SaveChangesAsync();
+        
+    }
+    public async Task AddDonation(Donation donation)
+    {
+        await _context.Donations.AddAsync(donation);
+        await _context.SaveChangesAsync();
     }
 }

@@ -1,10 +1,8 @@
 using API.Interfaces;
-
-namespace API.Services;
 using API.DTOs;
 using API.Models;
-using API.Repositories;
 using System.Text.Json;
+namespace API.Services;
 public class AuthService(IUserRepository repo, IConfiguration config, IJwtService jwtService)
     : IAuthService
 {
@@ -29,10 +27,7 @@ public class AuthService(IUserRepository repo, IConfiguration config, IJwtServic
             Email = dto.Email,
             PhoneNumber = dto.PhoneNumber,
             PasswordHash = hashedPassword,
-            BloodGroup = dto.BloodGroup,
-            Disease = dto.Disease,
-            LastDonationDate = dto.LastDonationDate,
-            CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.UtcNow,
             Role = dto.Role ?? "Client"
         };
 
@@ -51,7 +46,7 @@ public class AuthService(IUserRepository repo, IConfiguration config, IJwtServic
         if (user == null)
             return "Account does not exist";
 
-        bool isValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+        var isValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 
         if (!isValid)
             return "Password is incorrect";

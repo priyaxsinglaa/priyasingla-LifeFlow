@@ -1,19 +1,13 @@
-using API.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using API.Services;
-
+using API.DTOs;
+using API.Interfaces;
 namespace API.Controllers
 {
-    public class AuthController : BaseAPIController
+    public class AuthController(IAuthService service) : BaseAPIController
     {
-        private readonly AuthService _service;
+        private readonly IAuthService _service = service;
 
-    public AuthController(AuthService service)
-    {
-        _service = service;
-    }
-
-    [HttpPost("Register")]
+        [HttpPost("Register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
         var result = await _service.Register(dto);
@@ -29,7 +23,7 @@ namespace API.Controllers
     {
         var result = await _service.Login(dto);
 
-        if (result == "Account does not exist" || result == "Password is incorrect" || result == "Enter your existing Email or Contact Number")
+        if (result is "Account does not exist" or "Password is incorrect" or "Enter your existing Email or Contact Number")
             return Unauthorized(result);
 
         return Ok(result);

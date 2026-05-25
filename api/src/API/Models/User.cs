@@ -15,13 +15,11 @@ public partial class User
 
     public string PasswordHash { get; set; } = null!;
 
-    public string? BloodGroup { get; set; }
-
-    public string? Disease { get; set; }
-
-    public DateTime? LastDonationDate { get; set; }
-
     public DateTime? CreatedAt { get; set; }
 
     public string? Role { get; set; }
+
+    public virtual ICollection<Donation> Donations { get; set; } = new List<Donation>();
+
+    public virtual ICollection<HealthProfile> HealthProfiles { get; set; } = new List<HealthProfile>();
 }

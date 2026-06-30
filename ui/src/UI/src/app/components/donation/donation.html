@@ -1,0 +1,174 @@
+<!-- Top View Context Section Frame Layout -->
+<div class="view-header">
+  <div>
+    <h1 style="display: flex; align-items: center; gap: 10px; margin: 0;">
+      <span style="color: #e53e3e;">🩸</span> Donation History
+    </h1>
+    <p style="margin: 4px 0 0 0; color: #718096;">Track and manage all blood donations</p>
+  </div>
+  <button class="primary-action-trigger-red-btn" (click)="toggleFormPanel()" style="display: flex; align-items: center; gap: 8px;">
+    <span>➕</span> Record Donation
+  </button>
+</div>
+
+<!-- ================= TOGGLEABLE ENTRY FORM PANEL (image_39a3e6.png) ================= -->
+<div class="data-block-card" *ngIf="showFormPanel()" style="margin-top: 24px; border-left: 5px solid var(--primary-maroon-color);">
+  <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 8px; color: var(--text-main-charcoal);">
+    <span style="color: #e53e3e; font-size: 0.9rem;">🩸</span> New Donation Record
+  </h3>
+  
+  <form (ngSubmit)="donationForm.form.valid && submitDonation()" #donationForm="ngForm">
+    <div class="grid-form-layout">
+      
+      <div class="form-field-group">
+        <label>Blood Type *</label>
+        <select [(ngModel)]="formModel.bloodType" name="bloodType" required #bt="ngModel" [style.border-color]="bt.invalid && bt.touched ? '#e53e3e' : ''">
+          <option value="" disabled selected hidden>Select Blood Type</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+        </select>
+      </div>
+
+      <div class="form-field-group">
+        <label>Units *</label>
+        <input type="number" [(ngModel)]="formModel.units" name="units" min="1" max="10" required />
+      </div>
+
+      <div class="form-field-group">
+        <label>Donation Date *</label>
+        <input type="date" [(ngModel)]="formModel.donationDate" name="donationDate" required />
+      </div>
+
+      <div class="form-field-group">
+        <label>Donor Name</label>
+        <input type="text" [(ngModel)]="formModel.donorName" name="donorName" placeholder="John Doe" />
+      </div>
+
+      <div class="form-field-group">
+        <label>Contact</label>
+        <input type="text" [(ngModel)]="formModel.contact" name="contact" placeholder="Phone or email" />
+      </div>
+
+      <div class="form-field-group">
+        <label>Hospital *</label>
+        <input type="text" [(ngModel)]="formModel.hospital" name="hospital" placeholder="Requesting Facility Base" required />
+      </div>
+
+      <div class="form-field-group full-width-span-row">
+        <label>Notes</label>
+        <textarea [(ngModel)]="formModel.notes" name="notes" placeholder="Enter additional internal evaluation parameters here..." rows="3"></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions-row-strip" style="margin-top: 20px;">
+      <button type="submit" class="save-form-btn" [disabled]="donationForm.invalid">Save Donation</button>
+      <button type="button" class="cancel-form-btn" (click)="toggleFormPanel()">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<!-- ================= QUERY FILTERS SECTION CONTROL ROW ================= -->
+<div class="data-block-card" style="margin-top: 24px; padding: 16px 24px;">
+  <div class="filter-inputs-row-layout">
+    <div class="inline-input-group" style="width: 240px;">
+      <label style="font-size: 0.8rem; font-weight: 700; color: #4a5568; margin-bottom: 4px;">Blood Type</label>
+      <select [(ngModel)]="filterBloodType" (change)="applyFilters()">
+        <option value="">All Types</option>
+        <option value="O+">O+</option>
+        <option value="O-">O-</option>
+        <option value="A+">A+</option>
+        <option value="A-">A-</option>
+        <option value="B+">B+</option>
+        <option value="B-">B-</option>
+        <option value="AB+">AB+</option>
+        <option value="AB-">AB-</option>
+      </select>
+    </div>
+
+    <div class="inline-input-group expanded-field-span">
+      <label style="font-size: 0.8rem; font-weight: 700; color: #4a5568; margin-bottom: 4px;">From</label>
+      <input type="date" [(ngModel)]="filterFromDate" (change)="applyFilters()" />
+    </div>
+
+    <div class="inline-input-group expanded-field-span">
+      <label style="font-size: 0.8rem; font-weight: 700; color: #4a5568; margin-bottom: 4px;">To</label>
+      <input type="date" [(ngModel)]="filterToDate" (change)="applyFilters()" />
+    </div>
+
+    <button class="cancel-form-btn" (click)="clearFilters()" style="margin: 0; padding: 8px 16px; font-weight: 600; font-size: 0.9rem;">
+      Clear Filters
+    </button>
+  </div>
+</div>
+
+<!-- ================= SYSTEM DATA OUTPUT TABLE SEGMENT ================= -->
+<div class="data-block-card" style="margin-top: 16px; padding: 12px 0;">
+  <table class="system-data-table" *ngIf="donationsList().length > 0">
+    <thead>
+      <tr>
+        <th style="padding-left: 24px; width: 60px;">#</th>
+        <th>BLOOD TYPE</th>
+        <th>UNITS</th>
+        <th>DONATION DATE</th>
+        <th>DONOR</th>
+        <th>HOSPITAL</th>
+        <th>NOTES</th>
+        <th style="padding-right: 24px; text-align: right;">ACTIONS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let record of donationsList(); let i = index">
+        <td style="padding-left: 24px; color: #a0aec0; font-weight: 600;">
+          {{ (currentPage() - 1) * pageSize + i + 1 }}
+        </td>
+        <td>
+          <span class="blood-badge-icon">{{ record.bloodType }}</span>
+        </td>
+        <td style="font-weight: 700; color: var(--text-main-charcoal);">
+          {{ record.units }} units
+        </td>
+        <td style="color: #4a5568;">
+          {{ record.donationDate | date:'mediumDate' }}
+        </td>
+        <td style="font-weight: 500;">
+          {{ record.donorName || '—' }}
+          <small *ngIf="record.contact" style="display: block; color: #a0aec0; font-weight: 400;">{{ record.contact }}</small>
+        </td>
+        <td style="color: #4a5568;">{{ record.hospital }}</td>
+        <td style="color: #718096; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="record.notes">
+          {{ record.notes || '—' }}
+        </td>
+        <td style="padding-right: 24px; text-align: right;">
+          <button (click)="deleteRecord(record.id)" style="background: none; border: none; color: #e53e3e; font-weight: 600; cursor: pointer; padding: 4px 8px; font-size: 0.85rem;">
+            ✕ Delete
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Fallback Empty State Frame View Panel Container Layout (image_39a403.png) -->
+  <div class="empty-slate-view-fallback-panel-box" *ngIf="donationsList().length === 0" style="padding: 60px 40px;">
+    <div class="empty-icon" style="font-size: 2.5rem; margin-bottom: 8px;">📊</div>
+    <p style="margin: 0; color: #a0aec0; font-size: 0.95rem; font-weight: 500;">No donation records found.</p>
+  </div>
+
+  <!-- Table Pagination Footer Elements Strip -->
+  <div *ngIf="totalPages() > 1" style="display: flex; justify-content: flex-end; padding: 16px 24px; gap: 8px; border-top: 1px solid #edf2f7; margin-top: 12px;">
+    <button class="cancel-form-btn" style="padding: 6px 12px; margin: 0; font-size: 0.85rem;" [disabled]="currentPage() === 1" (click)="changePage(currentPage() - 1)">
+      Previous
+    </button>
+    <span style="align-self: center; font-size: 0.9rem; color: #4a5568; font-weight: 500;">
+      Page {{ currentPage() }} of {{ totalPages() }}
+    </span>
+    <button class="cancel-form-btn" style="padding: 6px 12px; margin: 0; font-size: 0.85rem;" [disabled]="currentPage() === totalPages()" (click)="changePage(currentPage() + 1)">
+      Next
+    </button>
+  </div>
+</div>

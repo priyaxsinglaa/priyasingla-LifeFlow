@@ -1,0 +1,35 @@
+<div class="view-header">
+  <div>
+    <h1>Shortage Alerts</h1>
+    <p>{{activeAlertsList().length}} active shortage alert(s)</p>
+  </div>
+  <button class="ghost-outline-action-blue-btn" (click)="triggerEvaluation()">🔄 Re-evaluate Alerts</button>
+</div>
+
+<!-- Active Alerts Existing Array Stack Feed Collection Output Section View Container Block Frame Grid Row Component -->
+<div class="alerts-grid-display-layout" *ngIf="activeAlertsList().length > 0">
+  <div class="feed-alert-card macro-sizing-card" *ngFor="let alert of activeAlertsList()" [ngClass]="'border-' + alert.severity.toLowerCase()">
+    <div class="macro-layout-line">
+      <span class="severity-badge-tag text-uppercase" [ngClass]="alert.severity.toLowerCase()">{{alert.severity}}</span>
+      <span class="blood-type-inline-badge large-badge">{{alert.bloodType}}</span>
+      <div class="location-details-block">
+        <h4>{{alert.hospital}}</h4>
+        <p>Triggered on: {{alert.createdDate | date:'medium'}}</p>
+      </div>
+      <div class="volume-metric-highlight-aside">{{alert.units}} units short</div>
+      <button 
+          class="resolve-action-trigger-btn" 
+          (click)="resolveAlert(alert.id)"
+          style="background-color: #38a169; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; transition: background 0.2s;">
+          <span>✓</span> Resolve
+        </button>
+    </div>
+  </div>
+</div>
+
+<!-- Structural Empty Slate Display Fallback Panel View Segment Container -->
+<div class="centralized-empty-slate-card-box-frame-panel-wrapper" *ngIf="activeAlertsList().length === 0">
+  <h2>No Active Shortage Alerts</h2>
+  <p>All blood types are currently within calculated safe pipeline margins.</p>
+  <button class="blue-action-execution-btn" (click)="triggerEvaluation()">Run Evaluation</button>
+</div>

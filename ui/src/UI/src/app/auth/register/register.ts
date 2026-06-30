@@ -11,19 +11,27 @@ import { AuthService } from '../../services/auth';
   template: `
     <div class="auth-container">
       <div class="auth-card">
-        <div class="brand-logo">🩸🩸</div>
+        <div class="brand-logo-container">
+          <img src="lf.png" alt="LifeFlow Logo" class="brand-logo-img" />
+          </div>
         <h2 class="brand-title">Create Account</h2>
         <p class="brand-subtitle">Join the AI Blood Forecast System</p>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
           <div class="form-group">
             <label>Username</label>
-            <input type="text" formControlName="username" placeholder="johndoe" />
+            <input type="text" formControlName="username" placeholder="username" />
           </div>
 
           <div class="form-group">
             <label>Email address</label>
             <input type="email" formControlName="email" placeholder="you@example.com" />
+          </div>
+
+          <!-- Added Phone Number Field -->
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" formControlName="phoneNumber" placeholder="e.g.,+91 1234567890" />
           </div>
 
           <div class="form-group">
@@ -47,7 +55,15 @@ import { AuthService } from '../../services/auth';
     </div>
   `,
   styles: [`
-    .brand-logo { font-size: 2rem; margin-bottom: 0.5rem; }
+    .brand-logo-container {
+      display: flex;
+      justify-content: center;
+    }
+    .brand-logo-img {
+      width: 140px;        
+      height: 80px;       
+      object-fit: contain;
+    }
     .brand-title { margin: 0; font-size: 1.5rem; color: #111827; font-weight: 700; }
     .brand-subtitle { margin: 0.25rem 0 1.5rem 0; color: #6b7280; font-size: 0.875rem; }
     
@@ -77,9 +93,11 @@ export class RegisterComponent {
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
 
+  // 1. Added phoneNumber control to the form group
   registerForm = this.fb.group({
     username: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
+    phoneNumber: ['', [Validators.required]], // Remove Validators.required if phone is optional
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
@@ -89,11 +107,8 @@ export class RegisterComponent {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    // Map properties matching backend DTO constraints
-    const formPayload = {
-      ...this.registerForm.value,
-      phoneNumber: "" // Auto-handles blank/missing parameters gracefully per service layer configuration
-    };
+    // 2. Pass the dynamic form data directly to the service payload
+    const formPayload = this.registerForm.value;
 
     this.authService.register(formPayload as any).subscribe({
       next: () => {
@@ -102,7 +117,8 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error || 'Registration failed. Check details.');
+        const errorMsg = err.error?.message || err.error || 'Registration failed. Check details.';
+        this.errorMessage.set(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
       }
     });
   }

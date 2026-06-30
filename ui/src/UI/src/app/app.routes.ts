@@ -1,20 +1,49 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './auth/login/login';
-import { RegisterComponent } from './auth/register/register';
+import { authGuard } from './guard/auth-guard-guard';
 
 export const routes: Routes = [
-
-    {path: '', 
-    component: LoginComponent ,
-    pathMatch: 'full'
+    {
+        path: '', 
+        loadComponent: () => import('./auth/login/login').then(m => m.LoginComponent),
+        pathMatch: 'full'
+    },
+    {
+        path: 'login', 
+        loadComponent: () => import('./auth/login/login').then(m => m.LoginComponent)
+    },
+    {   
+        path: 'register', 
+        loadComponent: () => import('./auth/register/register').then(m => m.RegisterComponent)
+    },
+    {
+        path: '',
+        canActivate: [authGuard],
+        children: 
+        [
+            { 
+                path: 'dashboard',
+                loadComponent: () => import('./components/dashboard/dashboard').then(m => m.DashboardComponent) 
+            },
+            { 
+                path: 'donations', 
+                loadComponent: () => import('./components/donation/donation').then(m => m.DonationsComponent) 
+            },
+            { 
+                path: 'forecast', 
+                loadComponent: () => import('./components/forecast/forecast').then(m => m.ForecastComponent) },
+            { 
+                path: 'alerts', 
+                loadComponent: () => import('./components/alerts/alerts').then(m => m.AlertsComponent) },
+            { 
+                path: 'reports', 
+                loadComponent: () => import('./components/reports/reports').then(m => m.ReportsComponent) 
+            }
+        ]
     },
 
-    {path: 'login', 
-    component: LoginComponent 
-    },
-
-    {path: 'register', 
-    component: RegisterComponent 
+    { 
+        path: '**', 
+        redirectTo: 'dashboard' 
     }
 
 ];

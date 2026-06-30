@@ -1,32 +1,52 @@
+using API.DTOs.Auth;
+using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using API.DTOs;
-using API.Interfaces;
-namespace API.Controllers
+
+namespace API.Controllers;
+
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
-    public class AuthController(IAuthService service) : BaseAPIController
+    private readonly IAuthService _authService;
+
+    public AuthController(IAuthService authService)
     {
-        private readonly IAuthService _service = service;
+        _authService = authService;
+    }
 
-        [HttpPost("Register")]
-    public async Task<IActionResult> Register(RegisterDto dto)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        var result = await _service.Register(dto);
+        try
+        {
+            var result = await _authService.RegisterAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
 
-        if (result == "Account is registered already")
-            return BadRequest(result);
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    {
+        try
+        {
+            var result = await _authService.LoginAsync(dto);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
 
+    [HttpPost("guest")]
+    public async Task<IActionResult> GuestLogin()
+    {
+        var result = await _authService.GuestLoginAsync();
         return Ok(result);
     }
-    
-    [HttpPost("Login")]
-    public async Task<IActionResult> Login(LoginDto dto)
-    {
-        var result = await _service.Login(dto);
-
-        if (result is "Account does not exist" or "Password is incorrect" or "Enter your existing Email or Contact Number")
-            return Unauthorized(result);
-
-        return Ok(result);
-    }   
-}
 }

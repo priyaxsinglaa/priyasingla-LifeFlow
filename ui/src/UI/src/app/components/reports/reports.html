@@ -1,0 +1,175 @@
+<div class="view-header">
+  <div>
+    <h1 style="display: flex; align-items: center; gap: 10px; margin: 0;">
+      <span style="color: #e53e3e;">📄</span> Reports Engine
+    </h1>
+    <p style="margin: 4px 0 0 0; color: #718096;">Generate and export operational blood donation & demand reports</p>
+  </div>
+</div>
+
+<div class="data-block-card" style="margin-top: 24px;">
+  <h4 style="margin: 0 0 12px 0; font-size: 0.85rem; color: #4a5568; font-weight: 700; text-transform: uppercase;">Report Filtering Parameters</h4>
+  <div class="filter-inputs-row-layout" style="align-items: flex-end;">
+    
+    <div class="inline-input-group" style="flex: 1;">
+      <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">FROM DATE *</label>
+      <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" required />
+    </div>
+
+    <div class="inline-input-group" style="flex: 1;">
+      <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">TO DATE *</label>
+      <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" required />
+    </div>
+
+    <div class="inline-input-group" style="flex: 1.5; min-width: 200px;">
+      <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">HOSPITAL (OPTIONAL)</label>
+      <select [ngModel]="selectedHospital()" (ngModelChange)="selectedHospital.set($event)">
+        <option value="">All hospitals / facilities</option>
+        <option *ngFor="let hosp of hospitalOptions()" [value]="hosp">{{ hosp }}</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button (click)="fetchGeneratedReport()" class="primary-action-trigger-red-btn" [disabled]="isLoading()" style="margin:0; height:40px; padding: 0 24px;">
+        {{ isLoading() ? 'Generating...' : 'Generate' }}
+      </button>
+      <button (click)="downloadExcelReport()" class="excel-export-green-btn" [disabled]="isLoading() || !reportData()" style="height:40px;">
+        📊 Export Excel
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="data-block-card" *ngIf="isLoading()" style="margin-top: 16px; text-align: center; padding: 40px;">
+  <div style="width: 32px; height: 32px; border: 3px solid #edf2f7; border-top-color: #e53e3e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px auto;"></div>
+  <p style="margin: 0; font-weight: 500; color: #4a5568;">Querying transaction record history ledgers...</p>
+</div>
+
+<div *ngIf="!isLoading() && reportData() as report" style="margin-top: 20px;">
+  
+  <div class="kpi-metric-summary-grid">
+    <div class="kpi-report-mini-card" style="border-left: 4px solid #e53e3e;">
+      <h4>Total Donors Recorded</h4>
+      <span style="color: #e53e3e;">{{ report.totalDonations }}</span>
+    </div>
+    <div class="kpi-report-mini-card" style="border-left: 4px solid #2f855a;">
+      <h4>Units Collected Volume</h4>
+      <span style="color: #2f855a;">{{ report.totalUnits }} units</span>
+    </div>
+    <div class="kpi-report-mini-card" style="border-left: 4px solid #2b6cb0;">
+      <h4>Total System Forecast Alerts</h4>
+      <span style="color: #2b6cb0;">{{ report.alerts.length }}</span>
+    </div>
+    <div class="kpi-report-mini-card" style="border-left: 4px solid #b7791f;">
+      <h4>Active Safety Shortages</h4>
+      <span style="color: #b7791f;">{{ report.totalDonations > 0 ? report.totalUnits : 0 }}</span>
+    </div>
+  </div>
+
+  <div class="tab-navigation-bar">
+    <button (click)="activeTab.set('donations')" class="tab-nav-btn" [class.active-tab-indicator]="activeTab() === 'donations'">
+      📊 Blood Type Matrix
+    </button>
+    <button (click)="activeTab.set('records')" class="tab-nav-btn" [class.active-tab-indicator]="activeTab() === 'records'">
+      🩸 Donation History List
+    </button>
+    <button (click)="activeTab.set('alerts')" class="tab-nav-btn" [class.active-tab-indicator]="activeTab() === 'alerts'">
+      ⚠️ Alerts Log Trace
+    </button>
+  </div>
+
+  <div class="data-block-card" *ngIf="activeTab() === 'donations'" style="padding: 0;">
+    <table class="system-data-table">
+      <thead>
+        <tr>
+          <th style="padding-left: 24px;">BLOOD GROUP</th>
+          <th>TOTAL UNITS ACCUMULATED DURING PERIOD</th>
+          <th style="padding-right: 24px;">PROPORTIONAL CONTRIBUTION STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let type of getMapKeys(report.unitsByBloodType)">
+          <td style="padding-left: 24px;"><span class="blood-badge-icon">{{ type }}</span></td>
+          <td style="font-weight: 700; color: #2d3748;">{{ report.unitsByBloodType[type] }} units</td>
+          <td style="padding-right: 24px;">
+            <span class="blood-badge-icon" style="background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8;">
+              Active Flow Contribution
+            </span>
+          </td>
+        </tr>
+        <tr *ngIf="getMapKeys(report.unitsByBloodType).length === 0">
+          <td colspan="3" style="text-align: center; color: #a0aec0; padding: 24px;">No blood metric summaries found in range.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="data-block-card" *ngIf="activeTab() === 'records'" style="padding: 0;">
+    <table class="system-data-table">
+      <thead>
+        <tr>
+          <th style="padding-left: 24px;">BLOOD TYPE</th>
+          <th>UNITS</th>
+          <th>DONATION DATE</th>
+          <th>DONOR NAME</th>
+          <th>HOSPITAL FACILITY</th>
+          <th style="padding-right: 24px;">CONTACT TRACE REFERENCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of report.donations">
+          <td style="padding-left: 24px;"><span class="blood-badge-icon">{{ item.bloodType }}</span></td>
+          <td style="font-weight: 600;">{{ item.units }}</td>
+          <td>{{ item.donationDate | date:'yyyy-MM-dd' }}</td>
+          <td style="color: #4a5568; font-weight: 500;">{{ item.donorName || '-' }}</td>
+          <td>{{ item.hospital }}</td>
+          <td style="padding-right: 24px; color: #718096; font-size: 0.85rem;">{{ item.contact || '-' }}</td>
+        </tr>
+        <tr *ngIf="report.donations.length === 0">
+          <td colspan="6" style="text-align: center; color: #a0aec0; padding: 24px;">No donation lines match structural constraints.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="data-block-card" *ngIf="activeTab() === 'alerts'" style="padding: 0;">
+    <table class="system-data-table">
+      <thead>
+        <tr>
+          <th style="padding-left: 24px;">SEVERITY</th>
+          <th>BLOOD TYPE</th>
+          <th>HOSPITAL LOCATION</th>
+          <th>REQUIRED SHORTAGE TARGET</th>
+          <th>STATUS FIELD</th>
+          <th style="padding-right: 24px;">CREATED ON TIMESTAMP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let alert of report.alerts">
+          <td style="padding-left: 24px;">
+            <span class="blood-badge-icon" 
+                  [style.background-color]="alert.severity === 'Critical' ? '#fff5f5' : (alert.severity === 'High' ? '#fffaf0' : '#f7fafc')"
+                  [style.color]="alert.severity === 'Critical' ? '#c53030' : (alert.severity === 'High' ? '#dd6b20' : '#4a5568')"
+                  [style.border-color]="alert.severity === 'Critical' ? '#feb2b2' : (alert.severity === 'High' ? '#fbd38d' : '#e2e8f0')">
+              {{ alert.severity }}
+            </span>
+          </td>
+          <td><span class="blood-badge-icon">{{ alert.bloodType }}</span></td>
+          <td style="font-weight: 500;">{{ alert.hospital }}</td>
+          <td>{{ alert.units }} units required</td>
+          <td>
+            <span [style.color]="alert.isActive ? '#e53e3e' : '#2f855a'" style="font-weight: 700; font-size: 0.85rem;">
+              ● {{ alert.isActive ? 'Active System Shortage Alert' : 'Resolved' }}
+            </span>
+          </td>
+          <td style="padding-right: 24px; color: #718096;">{{ alert.createdDate | date:'yyyy-MM-dd HH:mm' }}</td>
+        </tr>
+        <tr *ngIf="report.alerts.length === 0">
+          <td colspan="6" style="text-align: center; color: #a0aec0; padding: 24px;">No security exceptions logged during this frame window.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

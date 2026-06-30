@@ -1,0 +1,98 @@
+<div class="view-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Real-time blood supply overview</p>
+  </div>
+  <div class="header-date">{{currentDate | date}}</div>
+</div>
+
+<!-- Grid Summary Metrics Cards Block Panel Layout -->
+ <!-- @if (summary) {
+<div class="kpi-matrix-grid" >
+  <div class="kpi-card">
+    <div class="card-content">
+      <label>Donations This Month</label>
+      <span class="value">{{summary.donationsThisMonth}}</span>
+    </div>
+    <div class="card-badge pink-badge"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="card-content">
+      <label>Units Available</label>
+      <span class="value">{{summary.unitsAvailable}}</span>
+    </div>
+    <div class="card-badge green-badge"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="card-content">
+      <label>Active Alerts</label>
+      <span class="value warning">{{summary.activeAlertsCount}}</span>
+    </div>
+    <div class="card-badge yellow-badge"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="card-content">
+      <label>Critical Alerts</label>
+      <span class="value critical">{{summary.criticalAlertsCount}}</span>
+    </div>
+    <div class="card-badge red-badge"></div>
+  </div>
+</div>
+ } -->
+<!-- Main Split Segment Configuration Content Blocks Workspace Grid Section -->
+<div class="split-view-grid">
+  <!-- Blood Stock Table Control Container Panel Grid Block View Grid Card -->
+  <div class="data-block-card">
+    <h3>Blood Stock by Type</h3>
+    <table class="system-data-table">
+      <thead>
+        <tr>
+          <th>BLOOD TYPE</th>
+          <th>AVAILABLE</th>
+          <th>PREDICTED DEMAND</th>
+          <th>SUPPLY LEVEL</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let stock of bloodStocks()">
+          <td><span class="blood-badge-icon">{{stock.bloodType}}</span></td>
+          <td>{{stock.availableUnits}} units</td>
+          <td>{{stock.predictedDemand}} units</td>
+          <td>
+            <div class="progress-bar-rail">
+              <div class="progress-fill-indicator" [style.width.%]="stock.supplyLevel" [ngClass]="{'bg-crit': stock.status === 'Critical', 'bg-low': stock.status === 'Low', 'bg-norm': stock.status === 'Normal'}"></div>
+            </div>
+          </td>
+          <td><span class="status-pill-badge" [ngClass]="stock.status.toLowerCase()">{{stock.status}}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Dynamic Side Alerts Card Feed Pipeline Panel Wrapper Segment Grid System -->
+  <div class="data-block-card">
+    <div class="flex-title-row">
+      <h3>Active Alerts</h3>
+      <button class="link-btn" routerLink="/alerts">View All</button>
+    </div>
+    <div class="alerts-feed-stack">
+      <div class="feed-alert-card" *ngFor="let alert of activeAlerts()" [ngClass]="'border-' + alert.severity.toLowerCase()">
+        <div class="alert-meta-line">
+          <span class="severity-badge-tag" [ngClass]="alert.severity.toLowerCase()">{{alert.severity}}</span>
+          <span class="blood-type-inline-badge">{{alert.bloodType}}</span>
+          <span class="alert-location-text">{{alert.hospital}}</span>
+        </div>
+        <div class="alert-volume-metric">{{alert.units}} units</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary System Command Quick Bar Lower Footer Strip Panel UI Row Component -->
+<div class="quick-actions-action-strip-footer">
+  <span class="action-label">Quick Actions</span>
+  <button class="action-btn" (click)="navigateToRecord()"><span class="icon">➕</span> Record Donation</button>
+  <button class="action-btn" (click)="navigateToForecast()"><span class="icon">📈</span> Run Forecast</button>
+  <button class="action-btn" (click)="navigateToReports()"><span class="icon">📥</span> Export Report</button>
+</div>

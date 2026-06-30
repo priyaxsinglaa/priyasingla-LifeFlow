@@ -1,62 +1,91 @@
-using API.Interfaces;
-using API.DTOs;
+using API.DTOs.Auth;
+using API.Helpers;
 using API.Models;
-using System.Text.Json;
+using API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
 namespace API.Services;
-public class AuthService(IUserRepository repo, IConfiguration config, IJwtService jwtService)
-    : IAuthService
+
+public class AuthService : IAuthService
 {
-    private readonly IUserRepository _repo = repo;
-    private readonly IConfiguration _config = config;
-    private readonly IJwtService _jwtService = jwtService;
+    private readonly LifeFlowDbContext _db;
+    private readonly JwtHelper _jwt;
+    private readonly IConfiguration _config;
 
-    public async Task<string> Register(RegisterDto dto)
+    public AuthService(LifeFlowDbContext db, JwtHelper jwt, IConfiguration config)
     {
-        var existingUser = await _repo.GetByEmail(dto.Email);
-        var existingPhoneNumber = await _repo.GetByPhoneNumber(dto.PhoneNumber);
-        if(existingPhoneNumber != null || existingUser != null)
-        {
-            return "Account is registered already";
-        }
+        _db = db;
+        _jwt = jwt;
+        _config = config;
+    }
 
-        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    {
+        // Check for duplicates
+        if (await _db.Users.AnyAsync(u => u.Username == dto.Username))
+            throw new InvalidOperationException("Username already taken.");
+
+        if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
+            throw new InvalidOperationException("Email already registered.");
+
+        if (await _db.Users.AnyAsync(u => u.PhoneNumber == dto.PhoneNumber))
+            throw new InvalidOperationException("Phone number already registered.");
 
         var user = new User
         {
-            FullName = dto.FullName,
+            Username = dto.Username,
             Email = dto.Email,
             PhoneNumber = dto.PhoneNumber,
-            PasswordHash = hashedPassword,
-            CreatedAt = DateTime.UtcNow,
-            Role = dto.Role ?? "Client"
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = dto.Role,
+            CreatedAt = DateTime.UtcNow
         };
 
-        await _repo.AddUser(user);
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
 
-        return "Registered Successfully";
+        return BuildResponse(user);
     }
 
-    public async Task<string> Login(LoginDto dto)
-    {   
-        if (string.IsNullOrEmpty(dto.Email) && string.IsNullOrEmpty(dto.PhoneNumber))
-            return "Enter your existing Email or Contact Number";
+    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    {
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-        var user = await _repo.GetByEmailOrPhoneNumber(dto.Email, dto.PhoneNumber); 
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid email or password.");
 
-        if (user == null)
-            return "Account does not exist";
+        return BuildResponse(user);
+    }
 
-        var isValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+    public async Task<AuthResponseDto> GuestLoginAsync()
+    {
+        // Return a short-lived guest token without hitting DB
+        var guestUser = new User
+        {
+            Id = 0,
+            Username = "guest",
+            Email = "guest@lifeflow.com",
+            PhoneNumber = "0000000000",
+            PasswordHash = "",
+            Role = "Guest"
+        };
 
-        if (!isValid)
-            return "Password is incorrect";
-        var token = _jwtService.GenerateToken(user);
-        return JsonSerializer.Serialize(new
+        return await Task.FromResult(BuildResponse(guestUser));
+    }
+
+    private AuthResponseDto BuildResponse(User user)
+    {
+        var token = _jwt.GenerateToken(user);
+        var expiry = double.Parse(_config["Jwt:ExpiryMinutes"] ?? "60");
+
+        return new AuthResponseDto
         {
             Token = token,
-            user.FullName,
-            user.Email,
-            user.Role
-        });
+            Username = user.Username,
+            Email = user.Email,
+            Role = user.Role,
+            ExpiresAt = DateTime.Now.AddMinutes(expiry)
+        };
     }
 }

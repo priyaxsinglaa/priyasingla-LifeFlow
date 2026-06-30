@@ -1,0 +1,97 @@
+<div class="view-header">
+  <div>
+    <h1 style="display: flex; align-items: center; gap: 10px; margin: 0;">
+      <span style="color: #e53e3e;">📈</span> Demand Forecast Simulation
+    </h1>
+    <p style="margin: 4px 0 0 0; color: #718096;">Generate AI projections using local Qwen3 structures</p>
+  </div>
+</div>
+
+<div class="data-block-card" style="margin-top: 24px;">
+  <form (ngSubmit)="forecastForm.form.valid && executeForecastSimulation()" #forecastForm="ngForm">
+    <div class="filter-inputs-row-layout" style="align-items: flex-end;">
+      
+      <div class="inline-input-group" style="flex: 1; min-width: 180px;">
+        <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">BLOOD TYPE</label>
+        <select [(ngModel)]="requestModel.bloodType" name="bloodType" required>
+          <option *ngFor="let type of bloodTypesList()" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+
+      <div class="inline-input-group" style="flex: 2; min-width: 240px;">
+        <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">TARGET HEALTHCARE FACILITY / HOSPITAL</label>
+        <input type="text" [(ngModel)]="requestModel.hospital" name="hospital" placeholder="e.g. City General Hospital" required #hospInput="ngModel" />
+      </div>
+
+      <div class="inline-input-group" style="flex: 1; min-width: 140px;">
+        <label style="font-weight: 700; color: #4a5568; margin-bottom: 6px; display: block; font-size: 0.8rem;">HORIZON (DAYS)</label>
+        <input type="number" [(ngModel)]="requestModel.daysAhead" name="daysAhead" min="1" max="90" required />
+      </div>
+
+      <button type="submit" class="primary-action-trigger-red-btn" [disabled]="forecastForm.invalid || isProcessing()" style="margin: 0; padding: 10px 24px; font-weight: 600; height: 40px;">
+        {{ isProcessing() ? 'Processing...' : 'Run Analysis' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="data-block-card" *ngIf="isProcessing()" style="margin-top: 16px;">
+  <div class="pulsing-loader-strip">
+    <div class="spinner-element"></div>
+    <p style="font-weight: 500; margin: 0;">Generating predictions via local Ollama (qwen3.5:2b)...</p>
+  </div>
+</div>
+
+<div *ngIf="forecastResult() as result" style="margin-top: 16px;">
+  
+  <div class="data-block-card" style="margin-bottom: 16px;">
+    <h3 style="margin: 0 0 12px 0; color: #2b6cb0; display: flex; align-items: center; gap: 8px; font-size: 1rem;">
+      🧠 Large Language Model Evaluation Insights
+    </h3>
+    <div class="insight-callout-box">
+      <p style="margin: 0; line-height: 1.6; color: #2d3748; font-style: italic;">
+        "{{ result.aiInsight }}"
+      </p>
+    </div>
+  </div>
+
+  <div class="data-block-card" style="padding: 12px 0;">
+    <div style="padding: 16px 24px; border-bottom: 1px solid #edf2f7;">
+      <h3 style="margin: 0; font-size: 1rem; color: #1a202c;">
+        Projection Log Summary Matrix: {{ result.bloodType }} at {{ result.hospital }}
+      </h3>
+    </div>
+    
+    <table class="system-data-table">
+      <thead>
+        <tr>
+          <th style="padding-left: 24px; width: 80px;">DAY</th>
+          <th>TARGET DATE</th>
+          <th>EXPECTED DEMAND VOLUME</th>
+          <th style="padding-right: 24px;">CONFIDENCE BOUNDS INTERVAL (LOWER / UPPER)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of result.predictions; let idx = index">
+          <td style="padding-left: 24px; font-weight: 600; color: #718096;">
+            +{{ idx + 1 }}
+          </td>
+          <td style="font-weight: 500; color: #2d3748;">
+            {{ item.date | date:'EEEE, MMM d, yyyy' }}
+          </td>
+          <td>
+            <span class="blood-badge-icon" style="background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; font-size: 0.9rem; padding: 4px 10px;">
+              ⚡ <b>{{ item.predictedUnits | number:'1.1-1' }}</b> units
+            </span>
+          </td>
+          <td style="padding-right: 24px;">
+            <span style="font-weight: 500; color: #4a5568;">
+              {{ item.lowerBound | number:'1.1-1' }} to {{ item.upperBound | number:'1.1-1' }}
+            </span>
+            <span class="range-span-text">Units Variance Range</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

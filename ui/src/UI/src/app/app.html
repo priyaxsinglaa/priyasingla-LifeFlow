@@ -1,2 +1,22 @@
-
-<router-outlet></router-outlet>
+<div class="app-container">
+  @if (showSidebar) {
+  <aside class="sidebar-panel">
+    <div class="brand-identity-wrapper">
+      <div class="brand-avatar"><i class="fas fa-heartbeat"></i></div>
+      <h2>AI Blood Demand Forecast System</h2>
+    </div>
+    <nav class="navigation-matrix">
+      <a routerLink="dashboard" routerLinkActive="active-route"><span class="icon">📊</span> Dashboard</a>
+      <a routerLink="donations" routerLinkActive="active-route"><span class="icon">🩸</span> Donation History</a>
+      <a routerLink="forecast" routerLinkActive="active-route"><span class="icon">📈</span> Demand Forecast</a>
+      <a routerLink="alerts" routerLinkActive="active-route"><span class="icon">🔔</span> Shortage Alerts</a>
+      <a routerLink="reports" routerLinkActive="active-route"><span class="icon">📄</span> Reports</a>
+    </nav>
+    <div class="footer-metadata">© 2026 BloodAI</div>
+  </aside>
+  }
+  <!-- Route Display Component Workspace Content area -->
+  <main class="workspace-viewport">
+    <router-outlet></router-outlet>
+  </main>
+</div>

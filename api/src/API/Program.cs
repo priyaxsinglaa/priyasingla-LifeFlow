@@ -1,41 +1,22 @@
-using Microsoft.EntityFrameworkCore;
-using API.Repositories;
+using API.Models;
 using API.Services;
+using API.Services.Interfaces;
+using API.Helpers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using API.Interfaces;
 using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllers();
 
+builder.Services.AddDbContext<LifeFlowDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
-builder.Services.AddDbContext<API.Models.LifeFlowDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"))
-        );
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IUserInterface, UserService>();
-builder.Services.AddScoped<IDonationService, DonationService>();
-var secretKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrEmpty(secretKey))
-{
-    throw new Exception("JWT Key is missing! Check your secrets.json or UserSecretsId in .csproj");
-}
-builder.Services.AddAuthentication(options =>
-    {
-        // Sets "Bearer" as the default for all security checks
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "YourDefaultSecretKeyGoesHere";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.RequireHttpsMetadata = false; 
-        options.SaveToken = true;
-        options.TokenHandlers.Clear();
-        options.TokenHandlers.Add(new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler());
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -44,28 +25,44 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(secretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
-
-builder.Services.AddAuthorization(options =>
+builder.Services.AddAuthorization(); 
+builder.Services.AddHttpClient("", client =>
 {
-    // You can also add Role-based schemes here if needed
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    client.Timeout = TimeSpan.FromMinutes(5); // AI ko generate karne ka poora time dein
+});
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDonationService, DonationService>();
+builder.Services.AddScoped<IBloodStockService, BloodStockService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IForecastingService, ForecastingService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddSingleton<JwtHelper>();
+
+builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Your Angular URL
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
 
-
-
-app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+app.UseRouting();
+
+app.UseCors("AllowAngular");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.MapControllers();
-app.MapGet("/", () => "LifeFlow API is running!");
 
 app.Run();

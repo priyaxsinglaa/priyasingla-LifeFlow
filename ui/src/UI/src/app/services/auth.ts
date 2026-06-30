@@ -43,7 +43,15 @@ export class AuthService {
       tap(response => this.handleAuthSuccess(response))
     );
   }
-
+    guestLogin(): Observable<AuthResponseDto> {
+    // Sending an empty POST request to your backend guest endpoint
+    return this.http.post<AuthResponseDto>(`${this.apiUrl}/guest`, {}).pipe(
+      tap(response => this.handleAuthSuccess(response))
+    );
+  }
+  isLoggedIn(): boolean{
+    return !!localStorage.getItem('user_session');
+  }
   logout(): void {
     localStorage.removeItem('user_session');
     this.currentUser.set(null);
